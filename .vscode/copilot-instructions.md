@@ -4,7 +4,7 @@
 
 A Jellyfin server plugin that injects client-side JavaScript to display missing seasons as grayed-out cards using TMDB metadata. Zero configuration — just install via repository and restart.
 
-- **Current version**: 1.0.3.0
+- **Current version**: 1.0.4.0
 - **Target framework**: .NET 9 / `net9.0`
 - **Plugin GUID**: `a4b5c6d7-1234-5678-9abc-def012345678` (dashes stripped in some API calls: `a4b5c6d7123456789abcdef012345678`)
 - **Plugin name**: `Missing Seasons`
@@ -18,7 +18,7 @@ A Jellyfin server plugin that injects client-side JavaScript to display missing 
 ```
 missing-seasons.js (userscript alternative, root)
 Jellyfin.Plugin.MissingSeasons/
-├── Plugin.cs                        — Plugin registration, GUID, version
+├── MissingSeasonsPlugin.cs           — Plugin registration, GUID, version
 ├── Jellyfin.Plugin.MissingSeasons.csproj
 ├── Middleware/
 │   └── IndexHtmlCacheBustingStartupFilter.cs  — IStartupFilter, added v1.0.2.0
@@ -27,10 +27,15 @@ Jellyfin.Plugin.MissingSeasons/
 ├── Web/
 │   └── missing-seasons.js           — Embedded resource, served at /MissingSeasons/ClientScript
 artifacts/
-├── missing-seasons-1.0.1.0.zip
-├── missing-seasons-1.0.2.0.zip
-└── missing-seasons-1.0.3.0.zip
-manifest.json                        — Jellyfin plugin repository manifest
+├── missing-seasons-1.0.1.0.zip  …
+└── missing-seasons-1.0.4.0.zip
+scripts/
+├── deploy-local.sh    — Spin up a local Jellyfin Docker instance for development
+└── release.sh         — Build, package, update manifest, commit, tag, and push
+local-dev/             — Gitignored; created by deploy-local.sh
+├── config/            — Jellyfin config & plugin DLL
+└── media/shows/       — Stub test media (Breaking Bad S1+S3)
+manifest.json          — Jellyfin plugin repository manifest
 README.md
 ```
 
@@ -68,49 +73,71 @@ README.md
 
 ## Build & Release Process
 
-### 1. Update version
-Edit `Jellyfin.Plugin.MissingSeasons/Jellyfin.Plugin.MissingSeasons.csproj`:
-```xml
-<AssemblyVersion>1.0.X.0</AssemblyVersion>
-<FileVersion>1.0.X.0</FileVersion>
-<Version>1.0.X.0</Version>
-```
+Use the release script — it handles everything automatically:
 
-### 2. Build
 ```bash
-cd Jellyfin.Plugin.MissingSeasons
-dotnet build -c Release
+./scripts/release.sh <version> "<changelog>"
+# Example:
+./scripts/release.sh 1.0.5.0 "Fix episode count badge on Jellyfin 10.12"
 ```
 
-### 3. Package
-```bash
-cd /Users/Richard.Werkman/Dev/Repos/jellyfin-missing-seasons-extension
-zip -j artifacts/missing-seasons-1.0.X.0.zip \
-    Jellyfin.Plugin.MissingSeasons/bin/Release/net9.0/Jellyfin.Plugin.MissingSeasons.dll
-md5 -q artifacts/missing-seasons-1.0.X.0.zip
-```
+What the script does:
+1. Validates the working tree is clean and version doesn't already exist
+2. Bumps `AssemblyVersion`, `FileVersion`, and `Version` in `.csproj`
+3. Builds Release
+4. Packages `artifacts/missing-seasons-<version>.zip`
+5. Computes MD5 checksum
+6. Prepends the new entry to `manifest.json`
+7. Commits, tags `v<version>`, and pushes both to origin
 
-### 4. Update manifest.json
-Add a new entry at the **top** of the `versions` array in `manifest.json`. Required fields:
-- `version`, `changelog`, `targetAbi`, `sourceUrl`, `checksum`, `timestamp`
-- `sourceUrl`: `https://github.com/richardwerkman/jellyfin-missing-seasons-extension/releases/download/vX.X.X.X/missing-seasons-X.X.X.X.zip`
-  - Note: actual zips are served from the `artifacts/` folder in the repo, so the URL format may differ. Use raw GitHub URL to `artifacts/`.
-- `checksum`: MD5 hash of the zip file
+**Prerequisites**: clean working tree, no uncommitted changes.
 
-### 5. Commit and push
-```bash
-git add Jellyfin.Plugin.MissingSeasons/Jellyfin.Plugin.MissingSeasons.csproj \
-        Jellyfin.Plugin.MissingSeasons/Web/missing-seasons.js \
-        missing-seasons.js \
-        artifacts/missing-seasons-1.0.X.0.zip \
-        manifest.json
-git commit -m "vX.X.X.X: <description>"
-git push origin main
-```
+### Manual process (if script unavailable)
+
+1. Edit version in `.csproj` (3 fields: `AssemblyVersion`, `FileVersion`, `Version`)
+2. `dotnet build -c Release Jellyfin.Plugin.MissingSeasons/Jellyfin.Plugin.MissingSeasons.csproj`
+3. `zip -j artifacts/missing-seasons-X.X.X.X.zip Jellyfin.Plugin.MissingSeasons/bin/Release/net9.0/Jellyfin.Plugin.MissingSeasons.dll`
+4. `md5 -q artifacts/missing-seasons-X.X.X.X.zip` → paste checksum into `manifest.json`
+5. Prepend new version entry to `manifest.json` `versions` array; `sourceUrl` points to `https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/`
+6. `git add .csproj artifacts/ manifest.json && git commit -m "vX.X.X.X: ..." && git push origin main`
 
 ---
 
-## Deployment to Local Jellyfin Server
+## Local Development (Docker)
+
+Spin up an isolated Jellyfin instance on `http://localhost:8097` with test media pre-loaded:
+
+```bash
+./scripts/deploy-local.sh
+```
+
+What it does:
+1. Installs Docker Desktop via Homebrew if missing
+2. Builds the plugin (Release)
+3. Creates `local-dev/media/shows/Breaking Bad (2008)/` with stub S1+S3 episodes (S2, S4, S5 will show as missing in the plugin)
+4. Copies the built DLL to `local-dev/config/plugins/MissingSeasons_<version>/`
+5. Starts `jellyfin/jellyfin:latest` as `jellyfin-missing-seasons-test` on port 8097
+6. Auto-completes the setup wizard (admin / admin123)
+7. Adds the TV Shows library pointing at `/media/shows`
+
+After the library scan finishes, open Breaking Bad in the Jellyfin UI — seasons 2, 4, and 5 should appear as missing.
+
+```bash
+# Stop
+docker rm -f jellyfin-missing-seasons-test
+
+# Rebuild plugin and redeploy
+./scripts/deploy-local.sh
+
+# Follow logs
+docker logs -f jellyfin-missing-seasons-test
+```
+
+`local-dev/` is gitignored — config, DLL, and media are never committed.
+
+---
+
+## Deployment to Remote Jellyfin Server
 
 The Jellyfin server is at `{{serverinstance}}` (v10.11.6).
 Credentials are stored locally — do not commit to git.
