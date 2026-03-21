@@ -1,0 +1,12 @@
+{
+  "name": "jellyfin-missing-seasons",
+  "version": "1.0.0",
+  "description": "Jellyfin web client plugin that shows missing seasons in a series as grayed-out indicators, using TMDB data.",
+  "main": "dist/missing-seasons.js",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch"
+  },
+  "keywords": ["jellyfin", "plugin", "missing-seasons", "tmdb"],
+  "license": "MIT"
+}
