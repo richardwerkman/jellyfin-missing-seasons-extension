@@ -7,6 +7,15 @@
     "build": "node build.js",
     "dev": "node build.js --watch"
   },
-  "keywords": ["jellyfin", "plugin", "missing-seasons", "tmdb"],
-  "license": "MIT"
+  "keywords": [
+    "jellyfin",
+    "plugin",
+    "missing-seasons",
+    "tmdb"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@playwright/mcp": "^0.0.68",
+    "playwright": "^1.59.0-alpha-1771104257000"
+  }
 }

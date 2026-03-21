@@ -1,107 +1,137 @@
 # Jellyfin Missing Seasons Extension
 
-A Jellyfin web client plugin that shows **missing seasons** in your series library as grayed-out, non-clickable indicators. It uses [TMDB (The Movie Database)](https://www.themoviedb.org/) to determine which seasons exist for a series and highlights the ones you don't have yet.
+A Jellyfin plugin that displays missing seasons in your library as grayed-out, non-interactive indicators using TMDB metadata. Instantly see which seasons you're missing for any series.
 
-**Zero configuration** — the plugin uses the same public TMDB API key that Jellyfin's server uses internally. Just install and go.
-
-## Screenshot
-
-![Missing Seasons Plugin — Stargate SG-1](screenshot.png)
-
-*Example: Stargate SG-1 — downloaded seasons appear normally, while missing seasons are shown as grayed-out cards with a "Not available" badge and TMDB poster art.*
+**Zero configuration** — uses Jellyfin's internal TMDB API key. Just add the repository, install, and restart.
 
 ## Features
 
-- **Missing season detection** — Compares your Jellyfin library against TMDB data to find seasons you don't have.
-- **Grayed-out cards** — Missing seasons appear with reduced opacity, grayscale filter, and a "Not available" badge.
-- **Non-interactive** — Missing season cards are fully unclickable (no navigation, no play buttons).
-- **Artwork loaded** — Poster art for missing seasons is fetched from TMDB and displayed (in grayscale).
-- **Only released seasons** — Upcoming/unaired seasons are excluded based on their air date.
-- **Specials excluded** — Season 0 (Specials) is never shown as missing.
-- **Correct ordering** — Missing seasons are inserted in the correct position among your existing seasons.
-- **No configuration needed** — Uses the same public TMDB API key that Jellyfin uses internally.
+- **Missing season detection** — Scans TMDB data to find seasons you don't have in your library
+- **Grayed-out display** — Missing seasons appear with grayscale filter and "Not available" badge
+- **Episode count badge** — Shows the number of episodes in each missing season (using Jellyfin's native badge styling)
+- **TMDB artwork** — Displays official poster art from The Movie Database
+- **Smart filtering** — Only shows already-aired seasons (upcoming seasons excluded)
+- **Correct ordering** — Inserts missing seasons in chronological order among existing seasons
+- **Non-interactive** — Missing season cards are unclickable and can't be played
+- **Automatic injection** — Uses FileTransformation plugin for seamless script injection (v1.0.2+)
 
 ## Requirements
 
-- Jellyfin Server 10.8 or later
-- Your series must have TMDB metadata (most series do when using the default metadata providers)
+- **Jellyfin 10.8+**
+- Series must have TMDB metadata (automatic with default metadata providers)
+- [FileTransformation plugin](https://github.com/jellyfin/jellyfin-plugin-filetransformation) installed on server (for v1.0.2+)
 
-## Installation
+## Installation (Plugin Method — Recommended)
 
-Choose one of the three installation methods below:
+### Step 1: Add the Repository
 
-### Option A: Tampermonkey / Userscript (Easiest)
-
-This method works in any browser and requires no server access.
-
-1. Install the [Tampermonkey](https://www.tampermonkey.net/) browser extension
-2. Click the Tampermonkey icon → **Create a new script**
-3. Delete the template content and paste the entire contents of [`missing-seasons.js`](missing-seasons.js)
-4. Update the `@match` lines in the header to match your Jellyfin URL, for example:
+1. Open Jellyfin **Dashboard** → **Plugins** → **Repositories**
+2. Click **+ Add Repository**
+3. Enter this URL:
    ```
+   https://raw.githubusercontent.com/richardwerkman/jellyfin-missing-seasons-extension/main/manifest.json
+   ```
+4. Click **Save**
+
+### Step 2: Install the Plugin
+
+1. Go to **Plugins** → **Catalog**
+2. Find **Missing Seasons** and click it
+3. Click **Install**
+4. Jellyfin will download and extract the plugin
+
+### Step 3: Restart Jellyfin
+
+1. Go to **Dashboard** → **Settings** (top right) → **Restart**
+2. Wait for the server to restart (30-60 seconds)
+3. Jellyfin will register the plugin with the FileTransformation service
+
+### Step 4: Hard-Refresh Your Browser
+
+After restart, do a **hard refresh** to clear the cached index.html:
+- **Windows/Linux:** `Ctrl+Shift+R`
+- **macOS:** `Cmd+Shift+R`
+
+✅ **Done!** Navigate to any series with missing seasons and they should appear as grayed-out cards.
+
+## Installation (Userscript Method — Alternative)
+
+If you prefer a userscript instead of a server plugin:
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser
+2. Create a new script and paste the contents of [`missing-seasons.js`](missing-seasons.js) from this repo
+3. Update the `@match` URL to match your Jellyfin instance:
+   ```javascript
    // @match        https://your-jellyfin-server.com/*
    ```
-5. Press `Ctrl+S` / `Cmd+S` to save
-6. Navigate to your Jellyfin instance and open any series — missing seasons appear automatically
+4. Save and reload your Jellyfin web page
 
-### Option B: Custom JavaScript Injection (Server Admin)
-
-Some Jellyfin versions support custom JavaScript via the branding settings.
-
-1. Open your Jellyfin admin **Dashboard**
-2. Go to **General** → scroll to **Custom CSS and scripting** (or **Branding** section)
-3. In the **Custom JavaScript** field, paste the entire contents of [`missing-seasons.js`](missing-seasons.js)
-4. Click **Save**
-5. **Hard-refresh** your browser (`Ctrl+Shift+R` / `Cmd+Shift+R`)
-
-> **Note:** If your Jellyfin version doesn't have a Custom JavaScript field in the UI, use Option A or C instead.
-
-### Option C: Manual File Placement
-
-1. Locate your Jellyfin web client directory:
-   - **Docker:** `/usr/share/jellyfin/web/`
-   - **Linux (package):** `/usr/lib/jellyfin/bin/jellyfin-web/`
-   - **Windows:** `C:\Program Files\Jellyfin\Server\jellyfin-web\`
-   - **macOS:** `/Applications/Jellyfin.app/Contents/Resources/jellyfin-web/`
-
-2. Copy `missing-seasons.js` into that directory:
-   ```bash
-   # Example for Docker
-   docker cp missing-seasons.js jellyfin:/usr/share/jellyfin/web/missing-seasons.js
-   ```
-
-3. Edit the `index.html` file in that same directory and add the following line just before the closing `</body>` tag:
-   ```html
-   <script src="missing-seasons.js"></script>
-   ```
-
-4. Restart Jellyfin or hard-refresh your browser.
-
-> **Warning:** Manual file placement will be overwritten when Jellyfin updates. You'll need to re-apply after updates.
+This method works in any browser without server changes, but requires Tampermonkey.
 
 ## How It Works
 
-1. When you navigate to a series detail page, the plugin detects the series ID from the URL.
-2. It reads the TMDB Provider ID from Jellyfin's metadata for that series.
-3. It queries the [TMDB TV API](https://developer.themoviedb.org/reference/tv-series-details) for all seasons of that series.
-4. It compares TMDB's season list against your Jellyfin library seasons.
-5. For each missing (but already aired) season, it creates a card with the TMDB poster art, applies a grayscale filter + reduced opacity, and inserts it in the correct position among your existing season cards.
+1. **Detection** — Plugin loads when you navigate to a series detail page
+2. **Metadata lookup** — Reads the TMDB ID from Jellyfin's series metadata
+3. **TMDB query** — Fetches season data from [The Movie Database API](https://www.themoviedb.org/)
+4. **Comparison** — Compares TMDB seasons against your Jellyfin library
+5. **Injection** — Creates missing season cards with TMDB artwork and inserts them in correct order
+6. **Styling** — Uses Jellyfin's native `countIndicator` and `indicator` classes for episode badge (matching your theme)
+
+## Architecture
+
+- **Client-side JS** (`missing-seasons.js`) — Handles DOM manipulation, TMDB API calls, and card injection
+- **C# Plugin** (`Jellyfin.Plugin.MissingSeasons`) — Serves the JS and manages FileTransformation integration
+- **FileTransformation Plugin** — Dynamically injects the script tag into index.html at request time
+- **Cache-busting middleware** — Strips conditional request headers to prevent 304 responses, ensuring the injected script is always delivered
 
 ## Uninstallation
 
-- **Option A (Tampermonkey):** Open Tampermonkey dashboard → delete the "Jellyfin Missing Seasons" script.
-- **Option B:** Remove the script from Dashboard → General → Custom JavaScript and save.
-- **Option C:** Remove `missing-seasons.js` from the web directory and undo the `index.html` edit.
+### Plugin Method
+1. Go to **Dashboard** → **Plugins**
+2. Click the ⚙️ gear icon next to **Missing Seasons**
+3. Click **Uninstall**
+4. Restart Jellyfin
+
+### Userscript Method
+1. Open Tampermonkey dashboard
+2. Click the trash icon next to "Jellyfin Missing Seasons"
+3. Confirm deletion
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| No missing seasons appear | Check the browser console (`F12`) for `[MissingSeasons]` log messages. Ensure the series has a TMDB ID in its metadata. |
-| Missing seasons appear but no artwork | The season may not have poster art on TMDB. The card will still show with a dark placeholder. |
-| Cards appear but styling is wrong | Hard-refresh (`Ctrl+Shift+R`) to clear cached CSS. |
-| Plugin doesn't load after Jellyfin update | Re-apply the installation (Option A or C). |
+| Problem | Solution |
+|---------|----------|
+| No missing seasons appear | Check browser console (`F12`) for `[MissingSeasons]` log messages. Verify the series has TMDB metadata. |
+| Script tag not in index.html | Ensure FileTransformation plugin is installed. Check Jellyfin logs for plugin startup errors. |
+| Missing seasons appear but disappear on reload | Hard-refresh your browser (`Ctrl+Shift+R`) to clear cached index.html. |
+| Wrong styling/colors | Hard-refresh browser. Missing seasons use Jellyfin's native indicator classes, so styling should match your theme automatically. |
+| CORS errors in console | Verify you can access `https://api.themoviedb.org` from your network. Public TMDB API should be accessible. |
+| Plugin says "Active" but nothing appears | Restart Jellyfin. FileTransformation plugin must fully initialize before the service is available. |
+
+## Browser Support
+
+- ✅ Chrome / Chromium (latest)
+- ✅ Firefox (latest)
+- ✅ Safari (latest)
+- ✅ Edge (latest)
+
+## Performance Notes
+
+- **Minimal overhead** — Only activated on series detail pages
+- **Network** — One TMDB API call per series (cached in memory during session)
+- **Rendering** — Card injection happens once when the seasons section loads
+- **MutationObserver** — Watches for dynamic content changes, with debouncing to prevent excessive re-renders
+
+## Contributing
+
+Issues, suggestions, and pull requests are welcome! Please open an issue on [GitHub](https://github.com/richardwerkman/jellyfin-missing-seasons-extension).
 
 ## License
 
 MIT
+
+## Credits
+
+- [Jellyfin](https://jellyfin.org/) — Open-source media system
+- [TMDB](https://www.themoviedb.org/) — Movie and TV data
+- [FileTransformation Plugin](https://github.com/jellyfin/jellyfin-plugin-filetransformation) — Dynamic script injection
