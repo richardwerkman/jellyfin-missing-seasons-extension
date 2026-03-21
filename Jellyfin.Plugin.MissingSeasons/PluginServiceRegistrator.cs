@@ -12,6 +12,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        serviceCollection.AddHostedService<IndexHtmlService>();
+        // IScheduledTask implementations are auto-discovered by Jellyfin.
+        // No additional service registrations needed at this time.
     }
 }

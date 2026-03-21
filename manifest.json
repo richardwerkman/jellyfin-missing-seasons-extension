@@ -12,7 +12,7 @@
         "changelog": "Initial release",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/missing-seasons-1.0.0.0.zip",
-        "checksum": "47ee1b13d8e769d802566f19289a480b",
+        "checksum": "6620c4258d052c952c2785d66b547ea2",
         "timestamp": "2025-07-17T00:00:00Z"
       }
     ]
