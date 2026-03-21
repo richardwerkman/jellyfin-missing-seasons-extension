@@ -300,16 +300,22 @@
                 const section = container.closest('.verticalSection');
                 if (section) {
                     const header = section.querySelector('.sectionTitle');
-                    if (header && /season/i.test(header.textContent)) {
+                    // Match both "Seasons" (older Jellyfin) and "Series" (Jellyfin 10.11+)
+                    if (header && /season|series/i.test(header.textContent)) {
                         seasonContainer = container;
                         break;
                     }
                 }
             }
 
-            // Fallback: childrenCollapsible section
+            // Fallback: try the new listChildrenCollapsible section (Jellyfin 10.11+)
+            // then the old childrenCollapsible section (older Jellyfin)
             if (!seasonContainer) {
-                const childrenSection = document.querySelector('#childrenCollapsible .itemsContainer');
+                const listChildrenSection = document.querySelector('#listChildrenCollapsible .itemsContainer');
+                if (listChildrenSection) seasonContainer = listChildrenSection;
+            }
+            if (!seasonContainer) {
+                const childrenSection = document.querySelector('#childrenCollapsible:not(.hide) .itemsContainer');
                 if (childrenSection) seasonContainer = childrenSection;
             }
 
@@ -423,7 +429,10 @@
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                     for (const node of mutation.addedNodes) {
                         if (node.nodeType === Node.ELEMENT_NODE && node.querySelector) {
-                            if (node.querySelector('#childrenCollapsible') || node.id === 'childrenCollapsible') {
+                            if (
+                                node.querySelector('#listChildrenCollapsible') || node.id === 'listChildrenCollapsible' ||
+                                node.querySelector('#childrenCollapsible') || node.id === 'childrenCollapsible'
+                            ) {
                                 processSeasonsOnCurrentPage();
                                 return;
                             }

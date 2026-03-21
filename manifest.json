@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.4.0",
+        "changelog": "Fix missing season cards not showing on Jellyfin 10.11+: update container detection to match renamed 'Series' section (was 'Seasons')",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/missing-seasons-1.0.4.0.zip",
+        "checksum": "71473425b63b7f2e3f1286fa57d57b6d",
+        "timestamp": "2026-03-21T00:00:00Z"
+      },
+      {
         "version": "1.0.3.0",
         "changelog": "Use Jellyfin native countIndicator/indicator classes for episode count badge",
         "targetAbi": "10.11.0.0",
