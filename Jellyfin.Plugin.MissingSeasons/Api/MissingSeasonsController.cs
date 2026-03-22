@@ -1,4 +1,5 @@
 using System.Reflection;
+using Jellyfin.Plugin.MissingSeasons.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,5 +43,19 @@ public class MissingSeasonsController : ControllerBase
         }
 
         return File(scriptStream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Get the plugin configuration for the client-side script.
+    /// </summary>
+    /// <response code="200">Configuration returned.</response>
+    /// <returns>Plugin configuration as JSON.</returns>
+    [HttpGet("ClientConfiguration")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [Produces("application/json")]
+    public ActionResult<PluginConfiguration> GetClientConfiguration()
+    {
+        var config = MissingSeasonsPlugin.Instance?.Configuration ?? new PluginConfiguration();
+        return Ok(config);
     }
 }

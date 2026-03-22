@@ -13,6 +13,21 @@
     const POLL_INTERVAL_MS = 500;
     const MAX_POLL_ATTEMPTS = 40;
 
+    // ── Plugin Configuration ─────────────────────────────────────────────
+
+    let pluginConfig = { ShowAvailableSeasonsFirst: false };
+
+    async function loadPluginConfig() {
+        try {
+            const response = await fetch('/MissingSeasons/ClientConfiguration');
+            if (response.ok) {
+                pluginConfig = await response.json();
+            }
+        } catch (e) {
+            warn('Could not load plugin configuration, using defaults.', e);
+        }
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     function log(...args) {
@@ -346,42 +361,52 @@
                 }
             });
 
-            // Insert missing season cards in correct order
-            for (const season of missingSeasons) {
-                const card = buildMissingSeasonCard(season);
+            if (pluginConfig.ShowAvailableSeasonsFirst) {
+                // Available-first mode: append all missing season cards after the existing ones
+                // Sort missing seasons in numeric order so they appear in sequence after available ones
+                const sortedMissing = [...missingSeasons].sort((a, b) => a.seasonNumber - b.seasonNumber);
+                for (const season of sortedMissing) {
+                    const card = buildMissingSeasonCard(season);
+                    seasonContainer.appendChild(card);
+                }
+                log('Missing season cards injected (available-first mode).');
+            } else {
+                // Default mode: interleave missing seasons at their natural numeric position
+                for (const season of missingSeasons) {
+                    const card = buildMissingSeasonCard(season);
 
-                let inserted = false;
-                for (let i = allSeasonNumbers.length - 1; i >= 0; i--) {
-                    const sn = allSeasonNumbers[i];
-                    if (sn < season.seasonNumber) {
-                        const refCard = existingCardMap.get(sn) || seasonContainer.querySelector(`[data-missing-season="${sn}"]`);
-                        if (refCard) {
-                            if (refCard.nextSibling) {
-                                seasonContainer.insertBefore(card, refCard.nextSibling);
+                    let inserted = false;
+                    for (let i = allSeasonNumbers.length - 1; i >= 0; i--) {
+                        const sn = allSeasonNumbers[i];
+                        if (sn < season.seasonNumber) {
+                            const refCard = existingCardMap.get(sn) || seasonContainer.querySelector(`[data-missing-season="${sn}"]`);
+                            if (refCard) {
+                                if (refCard.nextSibling) {
+                                    seasonContainer.insertBefore(card, refCard.nextSibling);
+                                } else {
+                                    seasonContainer.appendChild(card);
+                                }
+                                inserted = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!inserted) {
+                        if (seasonContainer.children.length > 0) {
+                            const firstExistingSeason = Math.min(...Array.from(localSeasonNumbers));
+                            if (season.seasonNumber < firstExistingSeason) {
+                                seasonContainer.insertBefore(card, seasonContainer.firstChild);
                             } else {
                                 seasonContainer.appendChild(card);
                             }
-                            inserted = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!inserted) {
-                    if (seasonContainer.children.length > 0) {
-                        const firstExistingSeason = Math.min(...Array.from(localSeasonNumbers));
-                        if (season.seasonNumber < firstExistingSeason) {
-                            seasonContainer.insertBefore(card, seasonContainer.firstChild);
                         } else {
                             seasonContainer.appendChild(card);
                         }
-                    } else {
-                        seasonContainer.appendChild(card);
                     }
                 }
+                log('Missing season cards injected (interleaved mode).');
             }
-
-            log('Missing season cards injected.');
         }
 
         tryInject();
@@ -410,9 +435,13 @@
 
     // ── Initialization ───────────────────────────────────────────────────
 
-    function init() {
+    async function init() {
         log('Plugin loaded.');
         injectStyles();
+
+        // Load configuration before setting up listeners
+        await loadPluginConfig();
+        log('Config loaded:', pluginConfig);
 
         // Jellyfin SPA navigation
         document.addEventListener('viewshow', () => {

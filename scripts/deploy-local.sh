@@ -132,6 +132,13 @@ copy_plugin() {
   local plugin_dir="$CONFIG_DIR/plugins/MissingSeasons_${version}"
   local dll_src="$REPO_ROOT/Jellyfin.Plugin.MissingSeasons/bin/Release/net9.0/Jellyfin.Plugin.MissingSeasons.dll"
 
+  # Remove any old plugin version directories to avoid ambiguous route conflicts
+  for old_dir in "$CONFIG_DIR/plugins/MissingSeasons_"*/; do
+    if [[ "$old_dir" != "${plugin_dir}/" ]]; then
+      rm -rf "$old_dir"
+    fi
+  done
+
   mkdir -p "$plugin_dir"
   cp "$dll_src" "$plugin_dir/"
   ok "Plugin DLL v${version} ready in local-dev."

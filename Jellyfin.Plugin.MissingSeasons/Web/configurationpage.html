@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Missing Seasons Configuration</title>
+</head>
+<body>
+<div id="MissingSeasonsConfigPage" data-role="page" class="page libraryPage">
+    <div data-role="content">
+        <div class="content-primary">
+            <div class="verticalSection">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Missing Seasons Settings</h2>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="checkboxContainer">
+                        <input is="emby-checkbox" type="checkbox" id="showAvailableSeasonsFirst" />
+                        <span>Show available seasons first</span>
+                    </label>
+                    <div class="fieldDescription">
+                        When enabled, seasons you already have in your library are shown before missing ones.
+                        For example: if you have seasons 1 and 3, the order will be 1, 3, 2, 4, 5 instead of 1, 2, 3, 4, 5.
+                    </div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="button" class="raised button-submit block" id="btnSaveMissingSeasons">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var MissingSeasonsConfig = {
+        pluginUniqueId: 'a4b5c6d7-1234-5678-9abc-def012345678'
+    };
+
+    document.querySelector('#MissingSeasonsConfigPage').addEventListener('pageshow', function () {
+        Dashboard.showLoadingMsg();
+        ApiClient.getPluginConfiguration(MissingSeasonsConfig.pluginUniqueId).then(function (config) {
+            document.querySelector('#showAvailableSeasonsFirst').checked = config.ShowAvailableSeasonsFirst || false;
+            Dashboard.hideLoadingMsg();
+        });
+    });
+
+    document.querySelector('#btnSaveMissingSeasons').addEventListener('click', function () {
+        Dashboard.showLoadingMsg();
+        ApiClient.getPluginConfiguration(MissingSeasonsConfig.pluginUniqueId).then(function (config) {
+            config.ShowAvailableSeasonsFirst = document.querySelector('#showAvailableSeasonsFirst').checked;
+            ApiClient.updatePluginConfiguration(MissingSeasonsConfig.pluginUniqueId, config).then(function (result) {
+                Dashboard.processPluginConfigurationUpdateResult(result);
+            });
+        });
+    });
+</script>
+</body>
+</html>

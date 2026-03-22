@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MissingSeasons.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -8,7 +9,7 @@ namespace Jellyfin.Plugin.MissingSeasons;
 /// <summary>
 /// Missing Seasons plugin for Jellyfin.
 /// </summary>
-public class MissingSeasonsPlugin : BasePlugin<BasePluginConfiguration>
+public class MissingSeasonsPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
     /// <inheritdoc />
     public override string Name => "Missing Seasons";
@@ -34,5 +35,18 @@ public class MissingSeasonsPlugin : BasePlugin<BasePluginConfiguration>
         : base(applicationPaths, xmlSerializer)
     {
         Instance = this;
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<PluginPageInfo> GetPages()
+    {
+        return
+        [
+            new PluginPageInfo
+            {
+                Name = "missingseasonsconfig",
+                EmbeddedResourcePath = $"{GetType().Namespace}.Web.configurationpage.html"
+            }
+        ];
     }
 }

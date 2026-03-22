@@ -6,6 +6,7 @@
     "overview": "Shows missing seasons in a series using TMDB data",
     "owner": "richardwerkman",
     "category": "General",
+    "imageUrl": "https://raw.githubusercontent.com/richardwerkman/jellyfin-missing-seasons-extension/main/logo.png",
     "versions": [
       {
         "version": "1.0.4.0",
