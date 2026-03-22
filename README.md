@@ -2,7 +2,7 @@
 
 A Jellyfin plugin that displays missing seasons in your library as grayed-out, non-interactive indicators using TMDB metadata. Instantly see which seasons you're missing for any series.
 
-**Zero configuration** — uses Jellyfin's internal TMDB API key. Just add the repository, install, and restart.
+![Missing Seasons Plugin Preview](screenshot.png)
 
 ## Features
 
