@@ -29,7 +29,7 @@ A Jellyfin plugin that displays missing seasons in your library as grayed-out, n
 2. Click **+ Add Repository**
 3. Enter this URL:
    ```
-   https://raw.githubusercontent.com/richardwerkman/jellyfin-missing-seasons-extension/main/manifest.json
+   https://raw.githubusercontent.com/richardwerkman/jellyfin-plugins/main/manifest.json
    ```
 4. Click **Save**
 
