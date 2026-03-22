@@ -66,12 +66,13 @@ README.md
 
 - Uses Jellyfin's internal/public TMDB API key
 - Endpoint pattern: `https://api.themoviedb.org/3/tv/{tmdbId}/season/{n}?api_key={key}`
-- Only shows already-aired seasons (filters by `air_date`)
 - TMDB poster URL: `https://image.tmdb.org/t/p/w300{poster_path}`
 
 ---
 
 ## Build & Release Process
+
+Only release when explicitly asked!
 
 Use the release script — it handles everything automatically:
 
@@ -147,10 +148,9 @@ docker logs -f jellyfin-missing-seasons-test
 
 ---
 
-## Deployment to Remote Jellyfin Server
+## Deployment to Jellyfin Server
 
-The Jellyfin server is at `{{serverinstance}}` (v10.11.6).
-Credentials are stored locally — do not commit to git.
+Install Jellyfin Missing Seasons on your local Jellyfin server
 
 ### Install plugin via API
 ```bash
