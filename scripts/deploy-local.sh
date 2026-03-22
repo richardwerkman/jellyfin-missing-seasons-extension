@@ -45,30 +45,50 @@ get_version() {
 # ── Step 1: Docker ────────────────────────────────────────────────────────────
 
 check_docker() {
+  # Install docker CLI if missing
   if ! command -v docker &>/dev/null; then
     if command -v brew &>/dev/null; then
-      log "Docker not found — installing Docker Desktop via Homebrew..."
-      brew install --cask docker
-      open /Applications/Docker.app
-      log "Docker Desktop installed. Waiting for it to start (this can take ~30 s)..."
+      log "Docker CLI not found — installing docker + colima via Homebrew..."
+      brew install docker colima
     else
       err "Docker is not installed. Install it from https://www.docker.com/products/docker-desktop/ and re-run."
     fi
   fi
 
-  if ! docker info &>/dev/null 2>&1; then
-    log "Docker Desktop is not running — starting it..."
-    open /Applications/Docker.app 2>/dev/null || true
+  # If docker daemon is already reachable, nothing to do
+  if docker info &>/dev/null 2>&1; then
+    return
+  fi
+
+  # Try colima first (lightweight, no GUI needed)
+  if command -v colima &>/dev/null; then
+    local colima_status
+    colima_status=$(colima status 2>&1 || true)
+    if echo "$colima_status" | grep -q "Running"; then
+      ok "Colima already running."
+    else
+      log "Starting colima runtime..."
+      colima start --cpu 2 --memory 4
+    fi
+    return
+  fi
+
+  # Fall back to Docker Desktop
+  if [[ -d "/Applications/Docker.app" ]]; then
+    log "Starting Docker Desktop..."
+    open /Applications/Docker.app
     local i
     for i in $(seq 1 45); do
       sleep 2
       if docker info &>/dev/null 2>&1; then
-        ok "Docker is ready."
+        ok "Docker Desktop is ready."
         return
       fi
     done
-    err "Docker did not start within 90 s. Start Docker Desktop manually and re-run."
+    err "Docker Desktop did not start within 90 s. Start it manually and re-run."
   fi
+
+  err "No Docker runtime found. Run: brew install docker colima && colima start"
 }
 
 # ── Step 2: Build plugin ──────────────────────────────────────────────────────
@@ -145,11 +165,27 @@ wait_for_jellyfin() {
   for i in $(seq 1 40); do
     sleep 3
     if curl -sf "${base}/health" &>/dev/null; then
+      # Give startup tasks a moment to fully complete before touching wizard endpoints
+      sleep 5
       ok "Jellyfin is ready."
       return
     fi
   done
   err "Jellyfin did not start within 2 min. Check logs: docker logs $CONTAINER_NAME"
+}
+
+# Wait for the /Startup/User endpoint to accept requests (not blocked by startup middleware)
+wait_for_startup_endpoints() {
+  local base="http://localhost:${JELLYFIN_PORT}"
+  local i
+  for i in $(seq 1 20); do
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" "${base}/Startup/Configuration")
+    if [[ "$http_code" == "200" ]]; then
+      return
+    fi
+    sleep 2
+  done
 }
 
 # ── Step 7: Auto-configure (wizard + library) ─────────────────────────────────
@@ -165,15 +201,33 @@ configure_jellyfin() {
 
   if [[ "$wizard_done" == "False" ]]; then
     log "Completing setup wizard..."
+
+    # Wait until startup controller endpoints are no longer blocked
+    wait_for_startup_endpoints
+
     curl -sf -X POST "${base}/Startup/Configuration" \
       -H "Content-Type: application/json" \
       -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}' \
       &>/dev/null || true
 
-    curl -sf -X POST "${base}/Startup/User" \
-      -H "Content-Type: application/json" \
-      -d "{\"Name\":\"${ADMIN_USER}\",\"Password\":\"${ADMIN_PASS}\"}" \
-      &>/dev/null || true
+    # Retry /Startup/User until it succeeds (can still be blocked briefly)
+    local user_ok="false"
+    local u
+    for u in $(seq 1 10); do
+      local code
+      code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${base}/Startup/User" \
+        -H "Content-Type: application/json" \
+        -d "{\"Name\":\"${ADMIN_USER}\",\"Password\":\"${ADMIN_PASS}\"}")
+      if [[ "$code" == "204" || "$code" == "200" ]]; then
+        user_ok="true"
+        break
+      fi
+      sleep 2
+    done
+
+    if [[ "$user_ok" != "true" ]]; then
+      log "Warning: could not set admin credentials via API — you may need to complete the wizard manually."
+    fi
 
     curl -sf -X POST "${base}/Startup/Complete" &>/dev/null || true
     sleep 2
@@ -192,7 +246,19 @@ configure_jellyfin() {
     | python3 -c "import sys,json; print(json.load(sys.stdin)['AccessToken'])" 2>/dev/null || echo "")
 
   if [[ -z "$token" ]]; then
-    log "Could not authenticate automatically — complete initial setup at http://localhost:${JELLYFIN_PORT} and add a TV Shows library pointing to /media/shows."
+    log "Could not authenticate automatically."
+    echo ""
+    echo "  ┌─────────────────────────────────────────────────────────────┐"
+    echo "  │  One-time manual setup required (Jellyfin wizard)           │"
+    echo "  │                                                             │"
+    echo "  │  1. Open http://localhost:${JELLYFIN_PORT} in your browser           │"
+    echo "  │  2. Complete the 5-step setup wizard                        │"
+    echo "  │     • Server name: anything                                 │"
+    echo "  │     • Username: ${ADMIN_USER}  Password: ${ADMIN_PASS}              │"
+    echo "  │     • Add library: Shows → /media/shows                     │"
+    echo "  │  3. Re-run ./scripts/deploy-local.sh to verify setup        │"
+    echo "  └─────────────────────────────────────────────────────────────┘"
+    echo ""
     print_summary
     return
   fi

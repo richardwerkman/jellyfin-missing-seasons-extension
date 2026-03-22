@@ -111,16 +111,26 @@ Spin up an isolated Jellyfin instance on `http://localhost:8097` with test media
 ./scripts/deploy-local.sh
 ```
 
+Prerequisites: Docker CLI + colima (`brew install docker colima && colima start`).
+
 What it does:
-1. Installs Docker Desktop via Homebrew if missing
+1. Detects/starts colima or Docker Desktop automatically
 2. Builds the plugin (Release)
 3. Creates `local-dev/media/shows/Breaking Bad (2008)/` with stub S1+S3 episodes (S2, S4, S5 will show as missing in the plugin)
 4. Copies the built DLL to `local-dev/config/plugins/MissingSeasons_<version>/`
 5. Starts `jellyfin/jellyfin:latest` as `jellyfin-missing-seasons-test` on port 8097
-6. Auto-completes the setup wizard (admin / admin123)
+6. Attempts to auto-complete the setup wizard; if that fails (Jellyfin 10.11 requires a browser session), prompts for manual wizard completion
 7. Adds the TV Shows library pointing at `/media/shows`
 
+**One-time manual wizard step** (first run only):
+Jellyfin 10.11+ protects wizard endpoints with a session token, so the script falls back to manual setup:
+1. Open http://localhost:8097 in a browser
+2. Complete the 5-step wizard — username: `admin`, password: `admin123`, library: Shows → `/media/shows`
+3. Re-run the script — it will detect the completed wizard and skip the setup
+
 After the library scan finishes, open Breaking Bad in the Jellyfin UI — seasons 2, 4, and 5 should appear as missing.
+
+**FileTransformation note**: script injection via the server's FileTransformation plugin requires that plugin to also be installed in the local instance. For functional testing without it, you can verify the plugin JS logic by injecting the script manually in browser devtools: `fetch('/MissingSeasons/ClientScript').then(r=>r.text()).then(t=>eval(t))`
 
 ```bash
 # Stop
