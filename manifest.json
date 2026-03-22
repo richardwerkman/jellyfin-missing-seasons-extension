@@ -6,13 +6,13 @@
     "overview": "Shows missing seasons in a series using TMDB data",
     "owner": "richardwerkman",
     "category": "General",
-    "imageUrl": "https://raw.githubusercontent.com/richardwerkman/jellyfin-missing-seasons-extension/main/logo.png",
+    "imageUrl": "https://raw.githubusercontent.com/richardwerkman/jellyfin-plugins/main/logo.png",
     "versions": [
       {
         "version": "1.2.1.0",
         "changelog": "Upcoming seasons show 'Upcoming' badge instead of 'Not available'",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/missing-seasons-1.2.1.0.zip",
+        "sourceUrl": "https://github.com/richardwerkman/jellyfin-plugins/raw/main/artifacts/missing-seasons-1.2.1.0.zip",
         "checksum": "de952b8b62835c5e6a4ce8350aa8741b",
         "timestamp": "2026-03-22T00:00:00Z"
       },
@@ -20,7 +20,7 @@
         "version": "1.2.0.0",
         "changelog": "Show upcoming seasons with an air date badge on the card",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/missing-seasons-1.2.0.0.zip",
+        "sourceUrl": "https://github.com/richardwerkman/jellyfin-plugins/raw/main/artifacts/missing-seasons-1.2.0.0.zip",
         "checksum": "b7c0a04065b96be9642db27ca2c78964",
         "timestamp": "2026-03-22T00:00:00Z"
       },
@@ -28,7 +28,7 @@
         "version": "1.1.0.0",
         "changelog": "Add the ability to change the display order of missing seasons",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/missing-seasons-1.1.0.0.zip",
+        "sourceUrl": "https://github.com/richardwerkman/jellyfin-plugins/raw/main/artifacts/missing-seasons-1.1.0.0.zip",
         "checksum": "24fd8482208ab1542e6721c808f014f7",
         "timestamp": "2026-03-22T00:00:00Z"
       },
@@ -36,7 +36,7 @@
         "version": "1.0.1.0",
         "changelog": "Use FileTransformation plugin for script injection",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/richardwerkman/jellyfin-missing-seasons-extension/raw/main/artifacts/missing-seasons-1.0.1.0.zip",
+        "sourceUrl": "https://github.com/richardwerkman/jellyfin-plugins/raw/main/artifacts/missing-seasons-1.0.1.0.zip",
         "checksum": "f598d89cbbfad629901f7bb43b9860f2",
         "timestamp": "2025-07-17T00:00:00Z"
       }
